@@ -243,6 +243,19 @@ else
     echo "Warning: arping not found; interface may not be immediately reachable"
 fi
 
+[ "$GATEWAY" ] && {
+    if which arp > /dev/null 2>&1
+    then
+        GATEWAY_MAC=`arp -an $GATEWAY | awk '{print $4}'`
+        while ip netns exec $NSPID arp -n $GATEWAY | grep -qE 'incomplete|no entry|Cannot open network'; do
+            ip netns exec $NSPID arp -s $GATEWAY $GATEWAY_MAC
+            sleep 1
+        done
+    else
+        echo "Warning: arp not found; interface may not be immediately reachable"
+    fi
+}
+
 # Remove NSPID to avoid `ip netns` catch it.
 [ -f /var/run/netns/$NSPID ] && rm -f /var/run/netns/$NSPID
 exit 0
