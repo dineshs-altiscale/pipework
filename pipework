@@ -246,11 +246,12 @@ fi
 [ "$GATEWAY" ] && {
     if which arp > /dev/null 2>&1
     then
-	ping -c 1 $GATEWAY > /dev/null 2>&1 # To make sure gateway ARP entry on host is populated
-        GATEWAY_MAC=`arp -an $GATEWAY | awk '{print $4}'`
-	# Wait until gateway entry appears in the container's ARP table
-	while ! ip netns exec $NSPID arp -n $GATEWAY | grep -qE '([[:xdigit:]]{1,2}:){5}[[:xdigit:]]{1,2}'; do
+        ping -c 1 $GATEWAY > /dev/null 2>&1 # To make sure gateway ARP entry on host is populated
+        GATEWAY_MAC=`arp -an $GATEWAY | cut -d' ' -f4`
+        # Wait until gateway entry appears in the container's ARP table
+        while : ; do
             ip netns exec $NSPID arp -s $GATEWAY $GATEWAY_MAC
+            ip netns exec $NSPID arp -n $GATEWAY | grep -qE '([[:xdigit:]]{1,2}:){5}[[:xdigit:]]{1,2}' && break
             sleep 1
         done
     else
